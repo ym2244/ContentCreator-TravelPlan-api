@@ -4,4 +4,6 @@ python-dotenv==1.0.0
 groq
 pydantic==2.6.1
 requests
-streamlit # --- backend testing purpose
+
+# Optional - for local backend testing only
+streamlit
