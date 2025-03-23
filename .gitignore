@@ -2,3 +2,4 @@
 .env
 __pycache__
 travel_plan_detailed_requirements.txt
+test.txt

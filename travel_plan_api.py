@@ -15,7 +15,7 @@ def read_prompt_file(prompt_file_path='travel_prompt.txt'):
         return "Default system prompt if file not found."
     
     try:
-        with open(prompt_file_path, 'r') as file:
+        with open(prompt_file_path, 'r', encoding='utf-8') as file:
             return file.read().strip()
     except Exception as e:
         print(f"Error reading prompt file: {e}")

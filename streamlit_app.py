@@ -1,19 +1,31 @@
 import streamlit as st
 import requests
 
-# Configure the page layout and title
+# Page configuration
 st.set_page_config(page_title="AI Travel Plan Creator", layout="wide")
 st.title("🌍 AI Travel Plan Creator")
 
 API_URL = "http://127.0.0.1:8000/travel_plan_api"
 
-# Initialize session state variables
+# Initialize session state
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = ""
-if "profile" not in st.session_state:
-    st.session_state.profile = ""
+    st.session_state.chat_history = ""  # Stores all previous <CHAT> lines
+if "guidebook" not in st.session_state:
+    st.session_state.guidebook = """<b>User Travel Guidebook:</b>
+- <b>Name:</b> 
+- <b>Destination:</b> 
+- <b>Days:</b> 
+- <b>Budget:</b> 
+- <b>Style:</b> 
+- <b>Transportation:</b> 
 
-# Sidebar: Input section for user message and system prompt
+<b>Travel Plan:</b>
+<b>Day 1</b>  
+- <b>Morning:</b>  
+- <b>Afternoon:</b>  
+- <b>Evening:</b>"""  # Default guidebook template
+
+# Sidebar input
 tabs = st.sidebar.tabs(["💬 Chat Input"])
 with tabs[0]:
     st.subheader("Send a message to the Travel AI")
@@ -21,34 +33,54 @@ with tabs[0]:
     system_prompt = st.text_area("⚙️ System prompt (optional):", height=100)
     send_button = st.button("🚀 Send")
 
-# Handle API request when user clicks "Send"
+# Handle user request
 if send_button and user_input.strip():
+    # Append user input to chat history
+    new_user_line = f"USER: {user_input.strip()}"
+    full_chat = f"{st.session_state.chat_history}\n{new_user_line}".strip()
+
+    # Compose full user message (CHAT + CONTENT)
+    user_message_payload = f"""
+<CHAT>
+{full_chat}
+</CHAT>
+
+<CONTENT>
+{st.session_state.guidebook.strip()}
+</CONTENT>
+""".strip()
+
     query = {
-        "user_message": user_input,
+        "user_message": user_message_payload,
         "system_prompt": system_prompt.strip() if system_prompt.strip() else None
     }
+
     try:
         res = requests.post(API_URL, params=query)
         if res.status_code == 200:
             result = res.json()
             response = result.get("response", "(No response)")
 
-            # Split response into conversation and profile parts
-            chat_part = response.split("<CONTENT>")[0].replace("<CHAT>", "").replace("</CHAT>", "").strip()
-            content_part = response.split("<CONTENT>")[-1].replace("</CONTENT>", "").strip()
+            # Split <CHAT> and <CONTENT>
+            if "<CONTENT>" in response:
+                chat_part = response.split("<CONTENT>")[0]
+                chat_part = chat_part.replace("<CHAT>", "").replace("</CHAT>", "").strip()
+                content_part = response.split("<CONTENT>")[1].replace("</CONTENT>", "").strip()
+            else:
+                chat_part = response.strip()
+                content_part = st.session_state.guidebook
 
-            # Update session state
-            st.session_state.chat_history += f"\n\nUSER: {user_input}\nBOT: {chat_part}"
-            st.session_state.profile = content_part
+            # Update state
+            st.session_state.chat_history += f"\nBOT: {chat_part}"
+            st.session_state.guidebook = content_part
         else:
             st.error("❌ API error: " + res.text)
     except Exception as e:
         st.error("❌ Connection error: " + str(e))
 
-# Main column: Display the conversation history
+# UI display
 st.subheader("📝 Conversation Log")
-st.text_area("Conversation", value=st.session_state.chat_history, height=300)
+st.text_area("Conversation", value=st.session_state.chat_history.strip(), height=300)
 
-# Right column: Display the structured travel profile
-st.subheader("🧭 Travel Profile")
-st.markdown(st.session_state.profile or "_No profile data yet._")
+st.subheader("🧭 Travel Guidebook")
+st.markdown(st.session_state.guidebook or "_No guidebook data yet._")
