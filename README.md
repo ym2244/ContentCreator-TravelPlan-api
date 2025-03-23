@@ -22,5 +22,5 @@
     OR
     python -m uvicorn main:app --reload
 
-## (Optional) Run Testing Website Simultaneous
+## (Optional) Run testing website simultaneous
     streamlit run streamlit_app.py
