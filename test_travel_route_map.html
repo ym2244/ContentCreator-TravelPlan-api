@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_0b8c9d1ab594f15dd51f0a0c76f72886 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_0b8c9d1ab594f15dd51f0a0c76f72886" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_0b8c9d1ab594f15dd51f0a0c76f72886 = L.map(
+                "map_0b8c9d1ab594f15dd51f0a0c76f72886",
+                {
+                    center: [35.713403150000005, 139.79552649573398],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 6,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_d2b3cc1532bd7f0266a30dc5cfd60783 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_d2b3cc1532bd7f0266a30dc5cfd60783.addTo(map_0b8c9d1ab594f15dd51f0a0c76f72886);
+        
+    
+            var marker_2980d2e0e2f348667b5c96fac069ef11 = L.marker(
+                [35.713403150000005, 139.79552649573398],
+                {
+}
+            ).addTo(map_0b8c9d1ab594f15dd51f0a0c76f72886);
+        
+    
+        var popup_89ba7561e1bf8f489cb913831781e640 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_21e6a1f7c51a1b9832c8893d17037771 = $(`<div id="html_21e6a1f7c51a1b9832c8893d17037771" style="width: 100.0%; height: 100.0%;">Asakusa Temple   - </div>`)[0];
+                popup_89ba7561e1bf8f489cb913831781e640.setContent(html_21e6a1f7c51a1b9832c8893d17037771);
+            
+        
+
+        marker_2980d2e0e2f348667b5c96fac069ef11.bindPopup(popup_89ba7561e1bf8f489cb913831781e640)
+        ;
+
+        
+    
+    
+            marker_2980d2e0e2f348667b5c96fac069ef11.bindTooltip(
+                `<div>
+                     Stop 1
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_36aa2e31ba77ff0cc842c646bc7cf361 = L.marker(
+                [35.01674185, 135.67114821906335],
+                {
+}
+            ).addTo(map_0b8c9d1ab594f15dd51f0a0c76f72886);
+        
+    
+        var popup_1d15cb15fa6fa396152e752fb600311a = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_731d1752c4302282a90416ca76ea0857 = $(`<div id="html_731d1752c4302282a90416ca76ea0857" style="width: 100.0%; height: 100.0%;">Arashiyama Bamboo Grove   - </div>`)[0];
+                popup_1d15cb15fa6fa396152e752fb600311a.setContent(html_731d1752c4302282a90416ca76ea0857);
+            
+        
+
+        marker_36aa2e31ba77ff0cc842c646bc7cf361.bindPopup(popup_1d15cb15fa6fa396152e752fb600311a)
+        ;
+
+        
+    
+    
+            marker_36aa2e31ba77ff0cc842c646bc7cf361.bindTooltip(
+                `<div>
+                     Stop 2
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_a7043a08d1462c54908bf8032abbaa70 = L.polyline(
+                [[35.713403150000005, 139.79552649573398], [35.01674185, 135.67114821906335]],
+                {"bubblingMouseEvents": true, "color": "blue", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "blue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_0b8c9d1ab594f15dd51f0a0c76f72886);
+        
+</script>
+</html>

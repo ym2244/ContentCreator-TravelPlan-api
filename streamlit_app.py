@@ -1,5 +1,7 @@
 import streamlit as st
 import requests
+from travel_map_generator import render_map_streamlit_if_ready
+
 
 # Page configuration
 st.set_page_config(page_title="AI Travel Plan Creator", layout="wide")
@@ -73,6 +75,11 @@ if send_button and user_input.strip():
             # Update state
             st.session_state.chat_history += f"\nBOT: {chat_part}"
             st.session_state.guidebook = content_part
+
+            # Final wrap-up & visual map
+            if "Congratulations! Your full travel plan has been successfully completed" in response:
+                st.subheader("🗺️ Travel Route Map")
+                render_map_streamlit_if_ready(st.session_state.guidebook)
         else:
             st.error("❌ API error: " + res.text)
     except Exception as e:
