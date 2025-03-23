@@ -2,7 +2,7 @@
 
 from travel_map_generator import extract_locations_from_travel_plan, generate_travel_map
 
-# ✅ 模拟 Guidebook 内容
+# Guidebook example
 mock_guidebook = """
 <b>User Travel Information:</b>
 - <b>Name:</b> Lydia
@@ -25,14 +25,14 @@ mock_guidebook = """
 - <b>Evening:</b> Enjoy kaiseki meal in Gion
 """
 
-# ✅ 提取地点名
+# get locations
 places = extract_locations_from_travel_plan(mock_guidebook)
 print("Extracted places:", places)
 
-# ✅ 生成地图
+# create map
 m = generate_travel_map(places)
 
-# ✅ 保存为 HTML 文件（可在浏览器打开）
+# save as html
 if m:
     m.save("test_travel_route_map.html")
     print("✅ Map generated successfully! Open 'test_travel_route_map.html' to view it.")
