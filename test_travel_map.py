@@ -1,5 +1,3 @@
-# test_travel_map.py
-
 from travel_map_generator import extract_locations_from_travel_plan, generate_travel_map
 
 # Guidebook example
