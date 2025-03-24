@@ -1,58 +1,110 @@
-import folium
 import requests
-from streamlit_folium import folium_static
 import re
+import urllib.parse
 import streamlit as st
+import streamlit.components.v1 as components
+from utils import get_google_api_key
 
-def geocode_place(place):
-    url = f"https://nominatim.openstreetmap.org/search?format=json&q={place}"
-    headers = {"User-Agent": "AI Travel Planner for Lydia"}
+def geocode_place(place, api_key=None):
+    if not api_key:
+        return None
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(place)}&key={api_key}"
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(url)
         data = res.json()
-        if data:
-            return float(data[0]["lat"]), float(data[0]["lon"])
-    except Exception as e:
-        print(f"[Geocoding Error] Place: {place} — {e}")
+        if data["status"] == "OK":
+            loc = data["results"][0]["geometry"]["location"]
+            return loc["lat"], loc["lng"]
+    except:
+        pass
     return None
 
-def extract_locations_from_travel_plan(travel_content: str):
-    """
-    Extracts place names from all <b>Places:</b> lines in the <CONTENT> block.
-    Returns a list of unique places in order of appearance.
-    """
-    matches = re.findall(r"<b>Places:</b>\s*(.*?)\n", travel_content)
+def extract_locations_from_travel_plan(content: str):
+    matches = re.findall(r"<b>Places:</b>\s*(.*?)\n", content)
     all_places = []
     for line in matches:
         places = [p.strip() for p in line.split(",") if p.strip()]
         all_places.extend(places)
     return list(dict.fromkeys(all_places))
 
-def generate_travel_map(locations):
+def generate_travel_map(locations, api_key=None, save_as_html=False, html_file="test_google_map_output.html"):
+    if not api_key:
+        api_key = get_google_api_key()
+    if not api_key:
+        print("❌ No Google Maps API key found.")
+        return []
+
     coords = []
     for place in locations:
-        coord = geocode_place(place)
+        coord = geocode_place(place, api_key)
         if coord:
-            coords.append((coord[0], coord[1], place))
+            coords.append((place, coord[0], coord[1]))
+        else:
+            print(f"❌ Failed to geocode '{place}'")
 
+    if not coords or not save_as_html:
+        return coords
+
+    # ✅ JS generates map; needs to be edited
+    center_lat, center_lng = coords[0][1], coords[0][2]
+    markers_js = "\n".join([
+        f"""const marker{i} = new google.maps.Marker({{
+              position: {{ lat: {lat}, lng: {lng} }},
+              map: map,
+              label: \"{i+1}\",
+              title: \"Stop {i+1}: {name}\"
+            }});
+            const info{i} = new google.maps.InfoWindow({{
+              content: `<div><strong>Stop {i+1}:</strong> {name}<br>🍜 Recommended: Try local cuisine nearby!</div>`
+            }});
+            marker{i}.addListener(\"click\", () => {{
+              map.setZoom(15);
+              map.setCenter(marker{i}.getPosition());
+              info{i}.open(map, marker{i});
+            }});"""
+        for i, (name, lat, lng) in enumerate(coords)
+    ])
+
+    html_code = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Travel Map</title>
+      <meta charset="utf-8">
+      <style>#map {{ height: 100vh; width: 100%; }}</style>
+      <script src="https://maps.googleapis.com/maps/api/js?key={api_key}"></script>
+      <script>
+        function initMap() {{
+          if (typeof google === 'undefined') {{
+            document.getElementById('map').innerHTML = '❌ Google Maps failed to load. Check your API key.';
+            return;
+          }}
+          const map = new google.maps.Map(document.getElementById('map'), {{
+            zoom: 6,
+            center: {{ lat: {center_lat}, lng: {center_lng} }}
+          }});
+          {markers_js}
+        }}
+      </script>
+    </head>
+    <body onload="initMap()">
+      <div id="map"></div>
+    </body>
+    </html>
+    """
+
+    with open(html_file, "w", encoding="utf-8") as f:
+        f.write(html_code)
+    print(f"✅ HTML map saved to {html_file}")
+
+    return coords
+
+def render_map_streamlit_if_ready(locations):
+    api_key = get_google_api_key()
+    coords = generate_travel_map(locations, api_key=api_key, save_as_html=True)
     if not coords:
-        return None
-
-    m = folium.Map(location=coords[0][:2], zoom_start=6)
-
-    for i, (lat, lon, name) in enumerate(coords):
-        folium.Marker([lat, lon], popup=name, tooltip=f"Stop {i+1}").add_to(m)
-        if i > 0:
-            folium.PolyLine([coords[i - 1][:2], (lat, lon)], color="blue").add_to(m)
-
-    return m
-
-def render_map_streamlit_if_ready(locations: list):
-    if not locations:
-        st.info("🗺️ Your travel map will appear here once your plan is confirmed.")
+        st.warning("⚠️ Could not generate map.")
         return
-    m = generate_travel_map(locations)
-    if m:
-        folium_static(m)
-    else:
-        st.warning("⚠️ Could not generate map. Check location names.")
+    with open("test_google_map_output.html", "r", encoding="utf-8") as f:
+        html = f.read()
+    components.html(html, height=600)

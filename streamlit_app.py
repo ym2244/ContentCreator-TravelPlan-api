@@ -72,7 +72,6 @@ if send_button and user_input.strip():
                 chat_part = response.strip()
                 content_part = st.session_state.guidebook
 
-
             st.session_state.chat_history += f"\nBOT: {chat_part}"
             st.session_state.guidebook = content_part
 
@@ -138,14 +137,14 @@ travel_info, travel_plan = split_guidebook(st.session_state.guidebook)
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("#### 🧭 Travel Information")
+    st.markdown("#### 🧽 Travel Information")
     if travel_info:
         st.markdown(travel_info, unsafe_allow_html=True)
     else:
         st.info("No user information yet.")
 
 with col2:
-    st.markdown("#### 🗺️ Travel Plan")
+    st.markdown("#### 🗽 Travel Plan")
     if travel_plan:
         st.markdown(travel_plan, unsafe_allow_html=True)
     else:

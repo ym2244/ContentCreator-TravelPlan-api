@@ -1,7 +1,5 @@
 # Content Creator Chat Travel Plan API
 
-[prompt](PROMPT.md)
-
 # Setup
 ## Create a virtual environment
     python -m venv venv

@@ -1,6 +1,8 @@
 from travel_map_generator import extract_locations_from_travel_plan, generate_travel_map
+import webbrowser
+from utils import get_google_api_key
 
-# Guidebook example
+# Mock guidebook content
 mock_guidebook = """
 <b>User Travel Information:</b>
 - <b>Name:</b> Lydia
@@ -15,24 +17,21 @@ mock_guidebook = """
 <b>Day 1</b>  
 - <b>Morning:</b> Visit Asakusa Temple  
 - <b>Afternoon:</b> Explore Akihabara  
-- <b>Evening:</b> Enjoy dinner in Shinjuku
+- <b>Evening:</b> Enjoy dinner in Shinjuku  
+- <b>Places:</b> Asakusa Temple, Akihabara, Shinjuku
 
 <b>Day 2</b>  
 - <b>Morning:</b> Visit Arashiyama Bamboo Grove  
 - <b>Afternoon:</b> Explore Nishiki Market  
-- <b>Evening:</b> Enjoy kaiseki meal in Gion
+- <b>Evening:</b> Enjoy kaiseki meal in Gion  
+- <b>Places:</b> Arashiyama Bamboo Grove, Nishiki Market, Tokyo
 """
 
-# get locations
 places = extract_locations_from_travel_plan(mock_guidebook)
-print("Extracted places:", places)
 
-# create map
-m = generate_travel_map(places)
-
-# save as html
-if m:
-    m.save("test_travel_route_map.html")
-    print("✅ Map generated successfully! Open 'test_travel_route_map.html' to view it.")
+if not places:
+    print("❌ No places found.")
 else:
-    print("⚠️ Could not generate map. Please check if valid places were found.")
+    coords = generate_travel_map(places, api_key=get_google_api_key(), save_as_html=True)
+    if coords:
+        webbrowser.open("test_google_map_output.html")

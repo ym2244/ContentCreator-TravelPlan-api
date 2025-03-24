@@ -4,8 +4,8 @@ python-dotenv==1.0.0
 groq
 pydantic==2.6.1
 requests
-folium
+# folium
 
 # Optional - for local backend testing only
 streamlit
-streamlit-folium
+# streamlit-folium
