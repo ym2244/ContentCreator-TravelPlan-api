@@ -5,6 +5,14 @@ import streamlit as st
 import streamlit.components.v1 as components
 from utils import get_google_api_key
 
+def extract_locations_from_travel_plan(content: str):
+    matches = re.findall(r"<b>Places:</b>\s*(.*?)\n", content)
+    all_places = []
+    for line in matches:
+        places = [p.strip() for p in line.split(",") if p.strip()]
+        all_places.extend(places)
+    return list(dict.fromkeys(all_places))
+
 def geocode_place(place, api_key=None):
     if not api_key:
         return None
@@ -19,13 +27,22 @@ def geocode_place(place, api_key=None):
         pass
     return None
 
-def extract_locations_from_travel_plan(content: str):
-    matches = re.findall(r"<b>Places:</b>\s*(.*?)\n", content)
-    all_places = []
-    for line in matches:
-        places = [p.strip() for p in line.split(",") if p.strip()]
-        all_places.extend(places)
-    return list(dict.fromkeys(all_places))
+def get_top_restaurant_nearby(lat, lng, api_key=None):
+    if not api_key:
+        return "Try local cuisine nearby!"
+    
+    nearby_url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=800&type=restaurant&key={api_key}"
+    try:
+        res = requests.get(nearby_url)
+        data = res.json()
+        if data["status"] == "OK" and data["results"]:
+            top = sorted(data["results"], key=lambda x: x.get("rating", 0), reverse=True)[0]
+            name = top["name"]
+            rating = top.get("rating", "N/A")
+            return f"{name} (⭐ {rating})"
+    except:
+        pass
+    return "Try local cuisine nearby!"
 
 def generate_travel_map(locations, api_key=None, save_as_html=False, html_file="test_google_map_output.html"):
     if not api_key:
@@ -45,25 +62,29 @@ def generate_travel_map(locations, api_key=None, save_as_html=False, html_file="
     if not coords or not save_as_html:
         return coords
 
-    # ✅ JS generates map; needs to be edited
     center_lat, center_lng = coords[0][1], coords[0][2]
-    markers_js = "\n".join([
-        f"""const marker{i} = new google.maps.Marker({{
-              position: {{ lat: {lat}, lng: {lng} }},
-              map: map,
-              label: \"{i+1}\",
-              title: \"Stop {i+1}: {name}\"
-            }});
-            const info{i} = new google.maps.InfoWindow({{
-              content: `<div><strong>Stop {i+1}:</strong> {name}<br>🍜 Recommended: Try local cuisine nearby!</div>`
-            }});
-            marker{i}.addListener(\"click\", () => {{
-              map.setZoom(15);
-              map.setCenter(marker{i}.getPosition());
-              info{i}.open(map, marker{i});
-            }});"""
-        for i, (name, lat, lng) in enumerate(coords)
-    ])
+
+    markers_js = ""
+    for i, (name, lat, lng) in enumerate(coords):
+        rec = get_top_restaurant_nearby(lat, lng, api_key)
+        # 🧠 Clean HTML: remove blank lines
+        info_html = f"<div><strong>Stop {i+1}:</strong> {name}<br>🍜 Recommended: {rec}</div>".replace("\n", "").strip()
+        markers_js += f"""
+        const marker{i} = new google.maps.Marker({{
+            position: {{ lat: {lat}, lng: {lng} }},
+            map: map,
+            label: "{i+1}",
+            title: "Stop {i+1}: {name}"
+        }});
+        const info{i} = new google.maps.InfoWindow({{
+            content: `{info_html}`
+        }});
+        marker{i}.addListener("click", () => {{
+            map.setZoom(15);
+            map.setCenter(marker{i}.getPosition());
+            info{i}.open(map, marker{i});
+        }});\n
+        """
 
     html_code = f"""
     <!DOCTYPE html>
@@ -72,7 +93,7 @@ def generate_travel_map(locations, api_key=None, save_as_html=False, html_file="
       <title>Travel Map</title>
       <meta charset="utf-8">
       <style>#map {{ height: 100vh; width: 100%; }}</style>
-      <script src="https://maps.googleapis.com/maps/api/js?key={api_key}"></script>
+      <script src="https://maps.googleapis.com/maps/api/js?key={api_key}&libraries=places"></script>
       <script>
         function initMap() {{
           if (typeof google === 'undefined') {{

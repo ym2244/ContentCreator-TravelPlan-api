@@ -5,3 +5,5 @@ travel_plan_detailed_requirements.txt
 test.txt
 prompt_example_from_Prashant_Singh.txt
 secrets.toml
+SettingMapsAPI.md
+test_google_map_output.html
