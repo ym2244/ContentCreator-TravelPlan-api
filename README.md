@@ -13,7 +13,8 @@
     pip install -r requirements.txt
 
 ## Set API Key
-    Complete .env.example and .streamlit\secrets.toml.example (set Application Restrictions to None for Google API Key)
+    Complete .env.example and .streamlit\secrets.toml.example
+    (set Application Restrictions to None for Google API Key)
 
 ## Install Chromium and ChromeDriver (for Ubuntu)
     sudo apt-get install    chromium-browser chromium-chromedriver
