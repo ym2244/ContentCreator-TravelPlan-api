@@ -6,12 +6,28 @@ import streamlit.components.v1 as components
 from utils import get_google_api_key
 
 def extract_locations_from_travel_plan(content: str):
-    matches = re.findall(r"<b>Places:</b>\s*(.*?)\n", content)
-    all_places = []
-    for line in matches:
-        places = [p.strip() for p in line.split(",") if p.strip()]
-        all_places.extend(places)
-    return list(dict.fromkeys(all_places))
+    """
+    Extract places from daily plan:
+    {
+        "Day 1": [...],
+        "Day 2": [...],
+        ...
+    }
+    """
+    day_sections = re.findall(r"<b>Day \d+</b>.*?(?=<b>Day \d+</b>|$)", content, re.DOTALL)
+    day_place_dict = {}
+
+    for section in day_sections:
+        day_match = re.search(r"<b>Day (\d+)</b>", section)
+        places_match = re.search(r"<b>Places:</b>\s*(.*?)(?:<b>|$)", section, re.DOTALL)
+        if day_match and places_match:
+            day = f"Day {day_match.group(1)}"
+            places_raw = places_match.group(1).strip()
+            places_list = [p.strip() for p in places_raw.split(",") if p.strip()]
+            day_place_dict[day] = places_list
+
+    return day_place_dict
+
 
 def geocode_place(place, api_key=None):
     if not api_key:
@@ -30,62 +46,70 @@ def geocode_place(place, api_key=None):
 def get_top_restaurant_nearby(lat, lng, api_key=None):
     if not api_key:
         return "Try local cuisine nearby!"
-    
     nearby_url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=800&type=restaurant&key={api_key}"
     try:
         res = requests.get(nearby_url)
         data = res.json()
         if data["status"] == "OK" and data["results"]:
             top = sorted(data["results"], key=lambda x: x.get("rating", 0), reverse=True)[0]
-            name = top["name"]
-            rating = top.get("rating", "N/A")
-            return f"{name} (⭐ {rating})"
+            return f"{top['name']} (⭐ {top.get('rating', 'N/A')})"
     except:
         pass
     return "Try local cuisine nearby!"
 
-def generate_travel_map(locations, api_key=None, save_as_html=False, html_file="test_google_map_output.html"):
+def render_colored_map(day_place_dict, api_key=None):
     if not api_key:
         api_key = get_google_api_key()
     if not api_key:
-        print("❌ No Google Maps API key found.")
-        return []
+        st.warning("❌ No Google Maps API key found.")
+        return
+
+    color_list = [
+        "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+        "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+        "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+        "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png",
+        "http://maps.google.com/mapfiles/ms/icons/purple-dot.png",
+        "http://maps.google.com/mapfiles/ms/icons/orange-dot.png",
+        "http://maps.google.com/mapfiles/ms/icons/pink-dot.png",
+    ]
 
     coords = []
-    for place in locations:
-        coord = geocode_place(place, api_key)
-        if coord:
-            coords.append((place, coord[0], coord[1]))
-        else:
-            print(f"❌ Failed to geocode '{place}'")
+    marker_js_blocks = []
+    marker_index = 1
+    for i, (day, places) in enumerate(day_place_dict.items()):
+        color_url = color_list[i % len(color_list)]
+        for place in places:
+            coord = geocode_place(place, api_key)
+            if coord:
+                lat, lng = coord
+                rec = get_top_restaurant_nearby(lat, lng, api_key)
+                info_html = f"<div><strong>{day} - Stop {marker_index}:</strong> {place}<br>🍜 Recommended: {rec}</div>".replace("\n", "").strip()
+                js_block = f"""
+                const marker{marker_index} = new google.maps.Marker({{
+                    position: {{ lat: {lat}, lng: {lng} }},
+                    map: map,
+                    icon: "{color_url}",
+                    title: "{day} - Stop {marker_index}: {place}"
+                }});
+                const info{marker_index} = new google.maps.InfoWindow({{
+                    content: `{info_html}`
+                }});
+                marker{marker_index}.addListener("click", () => {{
+                    map.setZoom(15);
+                    map.setCenter(marker{marker_index}.getPosition());
+                    info{marker_index}.open(map, marker{marker_index});
+                }});\n
+                """
+                marker_js_blocks.append(js_block)
+                coords.append((lat, lng))
+                marker_index += 1
 
-    if not coords or not save_as_html:
-        return coords
+    if not coords:
+        st.warning("⚠️ No valid coordinates found.")
+        return
 
-    center_lat, center_lng = coords[0][1], coords[0][2]
-
-    markers_js = ""
-    for i, (name, lat, lng) in enumerate(coords):
-        rec = get_top_restaurant_nearby(lat, lng, api_key)
-        # 🧠 Clean HTML: remove blank lines
-        info_html = f"<div><strong>Stop {i+1}:</strong> {name}<br>🍜 Recommended: {rec}</div>".replace("\n", "").strip()
-        markers_js += f"""
-        const marker{i} = new google.maps.Marker({{
-            position: {{ lat: {lat}, lng: {lng} }},
-            map: map,
-            label: "{i+1}",
-            title: "Stop {i+1}: {name}"
-        }});
-        const info{i} = new google.maps.InfoWindow({{
-            content: `{info_html}`
-        }});
-        marker{i}.addListener("click", () => {{
-            map.setZoom(15);
-            map.setCenter(marker{i}.getPosition());
-            info{i}.open(map, marker{i});
-        }});\n
-        """
-
+    center_lat, center_lng = coords[0]
     html_code = f"""
     <!DOCTYPE html>
     <html>
@@ -104,7 +128,7 @@ def generate_travel_map(locations, api_key=None, save_as_html=False, html_file="
             zoom: 6,
             center: {{ lat: {center_lat}, lng: {center_lng} }}
           }});
-          {markers_js}
+          {"".join(marker_js_blocks)}
         }}
       </script>
     </head>
@@ -114,18 +138,8 @@ def generate_travel_map(locations, api_key=None, save_as_html=False, html_file="
     </html>
     """
 
-    with open(html_file, "w", encoding="utf-8") as f:
+    with open("test_google_map_output.html", "w", encoding="utf-8") as f:
         f.write(html_code)
-    print(f"✅ HTML map saved to {html_file}")
-
-    return coords
-
-def render_map_streamlit_if_ready(locations):
-    api_key = get_google_api_key()
-    coords = generate_travel_map(locations, api_key=api_key, save_as_html=True)
-    if not coords:
-        st.warning("⚠️ Could not generate map.")
-        return
     with open("test_google_map_output.html", "r", encoding="utf-8") as f:
         html = f.read()
     components.html(html, height=600)
