@@ -1,6 +1,6 @@
-from travel_map_generator import extract_locations_from_travel_plan, generate_travel_map
-import webbrowser
+from travel_map_generator import extract_locations_from_travel_plan, render_colored_map
 from utils import get_google_api_key
+import webbrowser
 
 # Mock guidebook content
 mock_guidebook = """
@@ -27,11 +27,14 @@ mock_guidebook = """
 - <b>Places:</b> Arashiyama Bamboo Grove, Nishiki Market, Tokyo
 """
 
-places = extract_locations_from_travel_plan(mock_guidebook)
+# Step 1: Extract structured places by day
+day_places = extract_locations_from_travel_plan(mock_guidebook)
 
-if not places:
-    print("❌ No places found.")
+if not day_places:
+    print("❌ No valid places found in travel plan.")
 else:
-    coords = generate_travel_map(places, api_key=get_google_api_key(), save_as_html=True)
-    if coords:
-        webbrowser.open("test_google_map_output.html")
+    # Step 2: Generate HTML map with colored markers
+    render_colored_map(day_places, api_key=get_google_api_key())
+
+    # Step 3: Open the generated HTML in browser
+    webbrowser.open("test_google_map_output.html")

@@ -6,14 +6,6 @@ import streamlit.components.v1 as components
 from utils import get_google_api_key
 
 def extract_locations_from_travel_plan(content: str):
-    """
-    Extract places from daily plan:
-    {
-        "Day 1": [...],
-        "Day 2": [...],
-        ...
-    }
-    """
     day_sections = re.findall(r"<b>Day \d+</b>.*?(?=<b>Day \d+</b>|$)", content, re.DOTALL)
     day_place_dict = {}
 
@@ -27,7 +19,6 @@ def extract_locations_from_travel_plan(content: str):
             day_place_dict[day] = places_list
 
     return day_place_dict
-
 
 def geocode_place(place, api_key=None):
     if not api_key:
@@ -74,8 +65,7 @@ def render_colored_map(day_place_dict, api_key=None):
         "http://maps.google.com/mapfiles/ms/icons/pink-dot.png",
     ]
 
-    coords = []
-    marker_js_blocks = []
+    locations = []
     marker_index = 1
     for i, (day, places) in enumerate(day_place_dict.items()):
         color_url = color_list[i % len(color_list)]
@@ -84,55 +74,96 @@ def render_colored_map(day_place_dict, api_key=None):
             if coord:
                 lat, lng = coord
                 rec = get_top_restaurant_nearby(lat, lng, api_key)
-                info_html = f"<div><strong>{day} - Stop {marker_index}:</strong> {place}<br>🍜 Recommended: {rec}</div>".replace("\n", "").strip()
-                js_block = f"""
-                const marker{marker_index} = new google.maps.Marker({{
-                    position: {{ lat: {lat}, lng: {lng} }},
-                    map: map,
-                    icon: "{color_url}",
-                    title: "{day} - Stop {marker_index}: {place}"
-                }});
-                const info{marker_index} = new google.maps.InfoWindow({{
-                    content: `{info_html}`
-                }});
-                marker{marker_index}.addListener("click", () => {{
-                    map.setZoom(15);
-                    map.setCenter(marker{marker_index}.getPosition());
-                    info{marker_index}.open(map, marker{marker_index});
-                }});\n
-                """
-                marker_js_blocks.append(js_block)
-                coords.append((lat, lng))
+                locations.append({
+                    "id": f"m{marker_index}",
+                    "day": day,
+                    "name": place,
+                    "lat": lat,
+                    "lng": lng,
+                    "info": f"🍜 {rec}",
+                    "color": color_url
+                })
                 marker_index += 1
 
-    if not coords:
+    if not locations:
         st.warning("⚠️ No valid coordinates found.")
         return
 
-    center_lat, center_lng = coords[0]
+    center_lat, center_lng = locations[0]["lat"], locations[0]["lng"]
+
     html_code = f"""
     <!DOCTYPE html>
     <html>
     <head>
       <title>Travel Map</title>
       <meta charset="utf-8">
-      <style>#map {{ height: 100vh; width: 100%; }}</style>
+      <style>
+        body {{ margin: 0; padding: 0; display: flex; }}
+        #sidebar {{ width: 280px; background: #f9f9f9; padding: 16px; overflow-y: auto; border-right: 1px solid #ccc; font-family: sans-serif; font-size: 14px; }}
+        #sidebar h3 {{ margin-top: 16px; color: #333; }}
+        .place-link {{ cursor: pointer; color: #0066cc; margin: 6px 0; display: block; text-decoration: underline; }}
+        #map {{ height: 100vh; flex: 1; }}
+      </style>
       <script src="https://maps.googleapis.com/maps/api/js?key={api_key}&libraries=places"></script>
       <script>
+        let map;
+        const markers = {{}};
+        const infos = {{}};
+        const locations = {locations};
+
         function initMap() {{
-          if (typeof google === 'undefined') {{
-            document.getElementById('map').innerHTML = '❌ Google Maps failed to load. Check your API key.';
-            return;
-          }}
-          const map = new google.maps.Map(document.getElementById('map'), {{
+          if (!locations.length) return;
+          map = new google.maps.Map(document.getElementById('map'), {{
             zoom: 6,
-            center: {{ lat: {center_lat}, lng: {center_lng} }}
+            center: {{ lat: locations[0].lat, lng: locations[0].lng }}
           }});
-          {"".join(marker_js_blocks)}
+
+          const sidebar = document.getElementById("sidebar");
+          let currentDay = "";
+
+          locations.forEach((loc, index) => {{
+            const position = {{ lat: loc.lat, lng: loc.lng }};
+            const marker = new google.maps.Marker({{
+              position,
+              map,
+              title: `${{loc.day}} - ${{loc.name}}`,
+              icon: loc.color
+            }});
+            const info = new google.maps.InfoWindow({{
+              content: `<strong>${{loc.day}} - ${{loc.name}}</strong><br>${{loc.info || ''}}`
+            }});
+
+            marker.addListener("click", () => {{
+              map.setZoom(15);
+              map.setCenter(marker.getPosition());
+              info.open(map, marker);
+            }});
+
+            markers[loc.id] = marker;
+            infos[loc.id] = info;
+
+            if (loc.day !== currentDay) {{
+              const dayHeader = document.createElement("h3");
+              dayHeader.textContent = loc.day;
+              sidebar.appendChild(dayHeader);
+              currentDay = loc.day;
+            }}
+
+            const link = document.createElement("span");
+            link.textContent = `• ${{loc.name}}`;
+            link.className = "place-link";
+            link.onclick = () => {{
+              map.setZoom(15);
+              map.setCenter(marker.getPosition());
+              info.open(map, marker);
+            }};
+            sidebar.appendChild(link);
+          }});
         }}
       </script>
     </head>
     <body onload="initMap()">
+      <div id="sidebar"></div>
       <div id="map"></div>
     </body>
     </html>
