@@ -7,11 +7,13 @@ from travel_map_generator import render_colored_map, extract_locations_from_trav
 st.set_page_config(page_title="AI Travel Plan Creator", layout="wide")
 st.title("🌍 AI Travel Plan Creator")
 
-API_URL = "http://127.0.0.1:8000/travel_plan_api"
+API_URL = st.secrets["API_BASE_URL"] + "/travel_plan_api"
 
 # Initialize session state
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = ""
+if "latest_exchange" not in st.session_state:
+    st.session_state.latest_exchange = ""
 if "guidebook" not in st.session_state:
     st.session_state.guidebook = """<b>User Travel Information:</b>
 - <b>Name:</b> 
@@ -24,18 +26,25 @@ if "guidebook" not in st.session_state:
 """
 if "travel_stops" not in st.session_state:
     st.session_state.travel_stops = {}
+if "send_trigger" not in st.session_state:
+    st.session_state.send_trigger = False
 
 # Sidebar input
 tabs = st.sidebar.tabs(["💬 Chat Input"])
 with tabs[0]:
     st.subheader("Send a message to the Travel AI")
-    user_input = st.text_area("✍️ Your message:", height=150)
-    system_prompt = st.text_area("⚙️ System prompt (optional):", height=100)
+
+    def trigger_send():
+        st.session_state.send_trigger = True
+
+    user_input = st.text_area("✍️ Your message:", height=100, on_change=trigger_send)
     send_button = st.button("🚀 Send")
 
 # Handle user request
-if send_button and user_input.strip():
-    new_user_line = f"USER: {user_input.strip()}"
+if (st.session_state.send_trigger or send_button) and user_input.strip():
+    st.session_state.send_trigger = False
+    user_message = user_input.strip()
+    new_user_line = f"USER: {user_message}"
     full_chat = f"{st.session_state.chat_history}\n{new_user_line}".strip()
 
     user_message_payload = f"""
@@ -49,8 +58,7 @@ if send_button and user_input.strip():
 """.strip()
 
     query = {
-        "user_message": user_message_payload,
-        "system_prompt": system_prompt.strip() if system_prompt.strip() else None
+        "user_message": user_message_payload
     }
 
     try:
@@ -62,14 +70,19 @@ if send_button and user_input.strip():
             if "<CONTENT>" in response:
                 chat_part = response.split("<CONTENT>")[0]
                 chat_part = chat_part.replace("<CHAT>", "").replace("</CHAT>", "").strip()
-
                 content_block_match = re.search(r"<CONTENT>(.*?)</CONTENT>", response, re.DOTALL)
                 content_part = content_block_match.group(1).strip() if content_block_match else st.session_state.guidebook
             else:
                 chat_part = response.strip()
                 content_part = st.session_state.guidebook
 
-            st.session_state.chat_history += f"\nBOT: {chat_part}"
+            # ✅ Extract last exchange only (avoid duplicating full chat)
+            last_user = f"USER: {user_message.strip()}"
+            bot_lines = chat_part.strip().split("BOT:")
+            last_bot_response = bot_lines[-1].strip() if len(bot_lines) > 1 else chat_part.strip()
+            st.session_state.latest_exchange = f"{last_user}\nBOT: {last_bot_response}"
+
+            st.session_state.chat_history = full_chat  # Keep full history for prompt
             st.session_state.guidebook = content_part
 
             # 🌍 Update travel stops by day
@@ -85,7 +98,47 @@ if send_button and user_input.strip():
 
 # UI display
 st.subheader("📝 Conversation Log")
-st.text_area("Conversation", value=st.session_state.chat_history.strip(), height=300)
+
+scroll_style = """
+<style>
+#chatbox {
+    height: 300px;
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #fafafa;
+}
+.bubble-user {
+    margin: 5px 0;
+    color: #333;
+}
+.bubble-bot {
+    margin: 5px 0;
+    color: #004085;
+    font-weight: 500;
+}
+</style>
+"""
+
+chat_lines = [line.strip() for line in st.session_state.latest_exchange.strip().split("\n") if line.strip()]
+html_chat = "<div id='chatbox'>"
+for line in chat_lines:
+    if line.startswith("USER:"):
+        html_chat += f"<div class='bubble-user'>🧍 <strong>You:</strong> {line[5:].strip()}</div>"
+    elif line.startswith("BOT:"):
+        html_chat += f"<div class='bubble-bot'>🤖 <strong>AI:</strong> {line[4:].strip()}</div>"
+html_chat += "<div id='scroll-anchor'></div></div>"
+html_chat += """
+<script>
+  var anchor = document.getElementById("scroll-anchor");
+  if (anchor) {
+    anchor.scrollIntoView({ behavior: "smooth" });
+  }
+</script>
+"""
+
+st.markdown(scroll_style + html_chat, unsafe_allow_html=True)
 
 # Guidebook display
 st.subheader("📘 Travel Guidebook")
