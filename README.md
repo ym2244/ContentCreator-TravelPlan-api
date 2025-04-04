@@ -1,5 +1,7 @@
 # Content Creator Chat Travel Plan API
 
+# View demo at https://contentcreator-travelplan.streamlit.app/ 
+
 # Setup
 ## Create a virtual environment
     python -m venv venv
