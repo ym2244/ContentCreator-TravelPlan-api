@@ -60,7 +60,7 @@ uvicorn main:app --reload
 python -m uvicorn main:app --reload
 ```
 
-### Run Streamlit frontend for testing
+### Run Streamlit frontend
 
 ```bash
 streamlit run streamlit_app.py
