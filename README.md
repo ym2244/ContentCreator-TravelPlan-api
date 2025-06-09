@@ -5,6 +5,7 @@ This project is part of the **Content Creator Chat** platform, providing an inte
 ## 🔪 View the Demo  
 **Travel Plan Creator:**
 👉 https://contentcreator-travelplan.streamlit.app/
+
 **Packing List Page:**
 👉 https://travel-list-jonas.netlify.app/
 ---
