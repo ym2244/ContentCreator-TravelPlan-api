@@ -8,6 +8,7 @@ This project is part of the **Content Creator Chat** platform, providing an inte
 
 **Packing List Page:**
 👉 https://travel-list-jonas.netlify.app/
+
 ---
 
 ## ✨ Features
