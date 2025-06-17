@@ -3,11 +3,11 @@
 This project is part of the **Content Creator Chat** platform, providing an intelligent, multi-agent travel planner built with **FastAPI + Streamlit**. It interacts with users through structured prompts and generates personalized daily travel plans using LLMs from Groq (LLaMA 3.3 70B).
 
 ## 🔪 View the Demo  
-**Travel Plan Creator:**
+**Travel Plan Creator Web:**
 - 👉 https://contentcreator-travelplan.streamlit.app/
 
 **Packing List Page:**
-- 👉 Web: https://travel-list-jonas.netlify.app/
+- 👉 React: https://travel-list-jonas.netlify.app/
 - 👉 Docker image: https://hub.docker.com/r/ym2244/travel_packing_list_page
 
 ---
