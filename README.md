@@ -7,7 +7,8 @@ This project is part of the **Content Creator Chat** platform, providing an inte
 👉 https://contentcreator-travelplan.streamlit.app/
 
 **Packing List Page:**
-👉 https://travel-list-jonas.netlify.app/
+👉 Web: https://travel-list-jonas.netlify.app/
+👉 Docker image: https://hub.docker.com/r/ym2244/travel_packing_list_page
 
 ---
 
